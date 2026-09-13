@@ -86,8 +86,8 @@ class MacTitleBar(QFrame):
 
         layout.addSpacing(12)
 
-        # Titre centré / branding avec version
-        self.title_label = QLabel(f"🎬  {title}  <span style='font-size: 11px; color: #72798E; font-weight: 500;'>v1.0</span>", self)
+        # Title centered with version
+        self.title_label = QLabel(f"🎬  {title}  <span style='font-size: 11px; color: #72798E; font-weight: 500;'>v1.0.1</span>", self)
         self.title_label.setStyleSheet("""
             font-size: 13px;
             font-weight: 600;
@@ -111,10 +111,10 @@ class MacTitleBar(QFrame):
         """)
         layout.addWidget(self.badge_backend)
 
-        # Bouton Réglages (Engrenage)
+        # Settings button (Gear)
         self.btn_settings = QPushButton("⚙️", self)
         self.btn_settings.setFixedSize(28, 28)
-        self.btn_settings.setToolTip("Paramètres & Clés API MusicKit")
+        self.btn_settings.setToolTip("Settings & MusicKit API")
         self.btn_settings.setStyleSheet("""
             QPushButton {
                 background-color: #212532;

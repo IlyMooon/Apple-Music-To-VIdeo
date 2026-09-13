@@ -1,8 +1,8 @@
 """
-Boîte de dialogue des Réglages.
-Permet de configurer le mode de fonctionnement (AppleScript réel vs Démo),
-le pays du storefront Apple Music, la tolérance de correspondance
-et les identifiants MusicKit API optionnels.
+Settings and Preferences dialog.
+Allows configuring the operational mode (Real AppleScript vs Demo),
+Apple Music catalog storefront country, similarity matching tolerance,
+and optional MusicKit API credentials.
 """
 
 from PyQt6.QtWidgets import (
@@ -14,13 +14,13 @@ from app.config import config
 
 
 class SettingsDialog(QDialog):
-    """Fenêtre modale des paramètres."""
+    """Preferences modal dialog."""
 
     sig_settings_saved = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Préférences — Apple Music To Video")
+        self.setWindowTitle("Preferences — Apple Music To Video")
         self.setFixedSize(480, 520)
         self.setStyleSheet("""
             QDialog {
@@ -51,34 +51,34 @@ class SettingsDialog(QDialog):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(16)
 
-        # 1. Groupe Général
-        grp_general = QGroupBox("GÉNÉRAL & MOTEUR", self)
+        # 1. General & Engine Group
+        grp_general = QGroupBox("GENERAL & ENGINE", self)
         v_general = QVBoxLayout(grp_general)
         v_general.setSpacing(10)
 
-        self.chk_demo_mode = QCheckBox("Activer le Mode Démo (sans interaction avec Music.app)", self)
+        self.chk_demo_mode = QCheckBox("Enable Demo Mode (no interaction with Music.app)", self)
         self.chk_demo_mode.setStyleSheet("font-size: 13px; font-weight: 500; color: #FFFFFF;")
         v_general.addWidget(self.chk_demo_mode)
 
         # Storefront
         h_store = QHBoxLayout()
-        lbl_store = QLabel("Pays du Store Apple Music :", self)
+        lbl_store = QLabel("Apple Music Storefront:", self)
         lbl_store.setStyleSheet("font-size: 12px; color: #A1A7B7;")
         h_store.addWidget(lbl_store)
 
         self.combo_store = QComboBox(self)
         self.combo_store.addItem("France (fr)", "fr")
-        self.combo_store.addItem("États-Unis (us)", "us")
-        self.combo_store.addItem("Royaume-Uni (gb)", "gb")
+        self.combo_store.addItem("United States (us)", "us")
+        self.combo_store.addItem("United Kingdom (gb)", "gb")
         self.combo_store.addItem("Canada (ca)", "ca")
-        self.combo_store.addItem("Allemagne (de)", "de")
-        self.combo_store.addItem("Japon (jp)", "jp")
+        self.combo_store.addItem("Germany (de)", "de")
+        self.combo_store.addItem("Japan (jp)", "jp")
         h_store.addWidget(self.combo_store)
         v_general.addLayout(h_store)
 
-        # Tolérance de recherche
+        # Search tolerance
         h_tol = QHBoxLayout()
-        self.lbl_tol_text = QLabel("Tolérance de similarité titre/clip : 85% (Haute précision)", self)
+        self.lbl_tol_text = QLabel("Title/video similarity tolerance: 85% (High precision)", self)
         self.lbl_tol_text.setStyleSheet("font-size: 12px; color: #A1A7B7;")
         h_tol.addWidget(self.lbl_tol_text)
 
@@ -91,20 +91,20 @@ class SettingsDialog(QDialog):
 
         layout.addWidget(grp_general)
 
-        # 2. Groupe MusicKit API (Optionnel)
-        grp_api = QGroupBox("API APPLE MUSIC / MUSICKIT (OPTIONNEL)", self)
+        # 2. MusicKit API Group (Optional)
+        grp_api = QGroupBox("APPLE MUSIC / MUSICKIT API (OPTIONAL)", self)
         v_api = QVBoxLayout(grp_api)
         v_api.setSpacing(8)
 
         lbl_api_desc = QLabel(
-            "Non obligatoire. L'application utilise par défaut l'API de recherche iTunes gratuite et AppleScript local.",
+            "Optional. By default, the app uses native AppleScript and the free Apple Music catalog search.",
             self
         )
         lbl_api_desc.setWordWrap(True)
         lbl_api_desc.setStyleSheet("font-size: 11px; color: #788094;")
         v_api.addWidget(lbl_api_desc)
 
-        lbl_dev_token = QLabel("Developer Token (JWT) :", self)
+        lbl_dev_token = QLabel("Developer Token (JWT):", self)
         lbl_dev_token.setStyleSheet("font-size: 11px; color: #A1A7B7;")
         v_api.addWidget(lbl_dev_token)
 
@@ -112,28 +112,28 @@ class SettingsDialog(QDialog):
         self.input_dev_token.setPlaceholderText("Bearer eyJhbGciOi...")
         v_api.addWidget(self.input_dev_token)
 
-        lbl_user_token = QLabel("Music User Token :", self)
+        lbl_user_token = QLabel("Music User Token:", self)
         lbl_user_token.setStyleSheet("font-size: 11px; color: #A1A7B7;")
         v_api.addWidget(lbl_user_token)
 
         self.input_user_token = QLineEdit(self)
-        self.input_user_token.setPlaceholderText("Optionnel (pour modification cloud)")
+        self.input_user_token.setPlaceholderText("Optional (for cloud library sync)")
         v_api.addWidget(self.input_user_token)
 
         layout.addWidget(grp_api)
 
         layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 
-        # Boutons d'action
+        # Action Buttons
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
 
-        self.btn_cancel = QPushButton("Annuler", self)
+        self.btn_cancel = QPushButton("Cancel", self)
         self.btn_cancel.setObjectName("secondaryButton")
         self.btn_cancel.clicked.connect(self.reject)
         btn_layout.addWidget(self.btn_cancel)
 
-        self.btn_save = QPushButton("Enregistrer", self)
+        self.btn_save = QPushButton("Save", self)
         self.btn_save.setObjectName("primaryButton")
         self.btn_save.clicked.connect(self._save_values)
         btn_layout.addWidget(self.btn_save)
@@ -141,7 +141,7 @@ class SettingsDialog(QDialog):
         layout.addLayout(btn_layout)
 
     def _on_slider_changed(self, value: int):
-        self.lbl_tol_text.setText(f"Tolérance de similarité titre/clip : {value}% (Haute précision)")
+        self.lbl_tol_text.setText(f"Title/video similarity tolerance: {value}% (High precision)")
 
     def _load_values(self):
         self.chk_demo_mode.setChecked(config.demo_mode)
@@ -152,7 +152,7 @@ class SettingsDialog(QDialog):
 
         val = int(config.get("search_tolerance", 0.85) * 100)
         self.slider_tol.setValue(val)
-        self.lbl_tol_text.setText(f"Tolérance de similarité titre/clip : {val}% (Haute précision)")
+        self.lbl_tol_text.setText(f"Title/video similarity tolerance: {val}% (High precision)")
 
         self.input_dev_token.setText(config.musickit_developer_token)
         self.input_user_token.setText(config.musickit_user_token)

@@ -12,7 +12,7 @@ class MockMusicBridge(BaseMusicBridge):
     """Fournisseur de données factices réalistes pour démonstrations et tests instantanés."""
 
     SAMPLE_PLAYLISTS: Dict[str, List[TrackInfo]] = {
-        "🔥 Hits Essentiels 2024": [
+        "🔥 Global Top Hits 2024": [
             TrackInfo("Around the World", "Daft Punk", "Homework", 240, "mock_1"),
             TrackInfo("Blinding Lights", "The Weeknd", "After Hours", 200, "mock_2"),
             TrackInfo("Levitating", "Dua Lipa", "Future Nostalgia", 203, "mock_3"),
@@ -23,17 +23,17 @@ class MockMusicBridge(BaseMusicBridge):
             TrackInfo("bad guy", "Billie Eilish", "WHEN WE ALL FALL ASLEEP", 194, "mock_8"),
             TrackInfo("Starboy", "The Weeknd", "Starboy", 230, "mock_9"),
             TrackInfo("Midnight City", "M83", "Hurry Up, We're Dreaming", 243, "mock_10"),
-            TrackInfo("Une Piste Inconnue Sans Clip", "Artiste Fantôme", "Album Mystère", 180, "mock_11"),
-            TrackInfo("Autre Titre Rare Sans Vidéo", "Groupe Indé Local", "Demo Tape", 150, "mock_12"),
+            TrackInfo("Unknown Track Without Video", "Ghost Artist", "Mystery Album", 180, "mock_11"),
+            TrackInfo("Rare Indie Demo Tape", "Local Garage Band", "Demo Tape", 150, "mock_12"),
         ],
-        "⚡ French Touch & Electro": [
+        "⚡ Electronic & Synthwave": [
             TrackInfo("Da Funk", "Daft Punk", "Homework", 328, "mock_20"),
             TrackInfo("Genesis", "Justice", "Cross", 234, "mock_21"),
             TrackInfo("Nightcall", "Kavinsky", "OutRun", 259, "mock_22"),
             TrackInfo("Safe and Sound", "Justice", "Woman", 345, "mock_23"),
             TrackInfo("Intro", "The xx", "xx", 127, "mock_24"),
         ],
-        "🌙 Découvertes Nocturnes": [
+        "🌙 Night Drive Chill": [
             TrackInfo("Save Your Tears", "The Weeknd", "After Hours", 215, "mock_30"),
             TrackInfo("Get Lucky", "Daft Punk", "Random Access Memories", 369, "mock_31"),
             TrackInfo("Physical", "Dua Lipa", "Future Nostalgia", 193, "mock_32"),
@@ -44,7 +44,7 @@ class MockMusicBridge(BaseMusicBridge):
         self._playlists = dict(self.SAMPLE_PLAYLISTS)
 
     def check_availability(self) -> Tuple[bool, str]:
-        return True, "Mode Démo actif (bibliothèque de démonstration prête)."
+        return True, "Demo Mode active (sample demonstration library ready)."
 
     def get_playlists(self) -> List[str]:
         return list(self._playlists.keys())

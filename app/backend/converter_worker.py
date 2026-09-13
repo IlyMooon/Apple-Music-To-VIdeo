@@ -1,7 +1,7 @@
 """
-Worker asynchrone pour la conversion des morceaux en clips vidéo.
-S'exécute dans un thread séparé (QThread) pour garantir la fluidité de l'interface
-et gère l'annulation réactive en temps réel.
+Asynchronous worker for converting tracks to music videos.
+Runs in a background QThread to ensure UI responsiveness
+and handles cooperative real-time cancellation.
 """
 
 import time
@@ -14,9 +14,9 @@ from .musickit_bridge import MusicKitBridge
 
 
 class MusicVideoConverterWorker(QThread):
-    """Moteur de traitement asynchrone de la playlist."""
+    """Background engine processing the playlist conversion."""
 
-    # Signaux émis vers l'interface graphique
+    # UI Signals
     sig_started = pyqtSignal(int)                         # total tracks
     sig_progress = pyqtSignal(int, int, object)           # current, total, TrackInfo
     sig_item_processed = pyqtSignal(object, str, object, str)  # TrackInfo, status, VideoMatch or None, reason
@@ -47,30 +47,29 @@ class MusicVideoConverterWorker(QThread):
         self._is_cancelled = False
 
     def cancel(self) -> None:
-        """Déclenche l'annulation coopérative du traitement."""
+        """Trigger cooperative cancellation."""
         self._is_cancelled = True
-        self.sig_log.emit("Demande d'annulation reçue... Arrêt en cours.", "warning")
+        self.sig_log.emit("Cancellation request received... Stopping.", "warning")
 
     def run(self) -> None:
-        """Boucle principale d'exécution du QThread."""
+        """Main QThread execution loop."""
         start_time = time.time()
-        self.sig_log.emit(f"Démarrage de l'analyse : '{self.source_playlist}' → '{self.destination_playlist}'", "info")
+        self.sig_log.emit(f"Starting analysis: '{self.source_playlist}' → '{self.destination_playlist}'", "info")
 
-        # 1. Vérifier ou créer la playlist de destination
+        # 1. Create target playlist if needed and purge any residual non-videos
         try:
             self.bridge.create_playlist(self.destination_playlist)
-            # Nettoyage préventif : retirer toute piste audio résiduelle
             purged = self.bridge.clean_playlist_non_videos(self.destination_playlist)
             if purged > 0:
-                self.sig_log.emit(f"🧹 Nettoyage : {purged} piste(s) non-vidéo retirée(s) de la playlist.", "info")
+                self.sig_log.emit(f"🧹 Cleanup: {purged} non-video track(s) removed from playlist.", "info")
         except Exception as e:
-            self.sig_log.emit(f"Avertissement lors de la création/nettoyage de la playlist: {e}", "warning")
+            self.sig_log.emit(f"Warning during playlist creation/cleanup: {e}", "warning")
 
-        # 2. Récupérer les pistes de la source
+        # 2. Retrieve source tracks
         try:
             tracks: List[TrackInfo] = self.bridge.get_playlist_tracks(self.source_playlist)
         except Exception as e:
-            self.sig_error.emit(f"Impossible de lire les pistes de '{self.source_playlist}': {e}")
+            self.sig_error.emit(f"Unable to read tracks from '{self.source_playlist}': {e}")
             return
 
         total_tracks = len(tracks)
@@ -93,23 +92,23 @@ class MusicVideoConverterWorker(QThread):
 
         for index, track in enumerate(tracks, start=1):
             if self._is_cancelled:
-                self.sig_log.emit(f"Processus interrompu à la piste {index}/{total_tracks}.", "warning")
+                self.sig_log.emit(f"Process interrupted at track {index}/{total_tracks}.", "warning")
                 break
 
-            # Notification de progression
+            # Progress notification
             self.sig_progress.emit(index, total_tracks, track)
-            self.sig_log.emit(f"[{index}/{total_tracks}] Recherche clip pour : {track.name} - {track.artist}", "info")
+            self.sig_log.emit(f"[{index}/{total_tracks}] Searching video for: {track.name} - {track.artist}", "info")
 
             video_match: Optional[VideoMatch] = None
 
-            # Étape A : Recherche locale si demandée
+            # Step A: Local search if enabled
             if self.search_local_first:
                 try:
                     video_match = self.bridge.find_local_video(track)
                 except Exception as e:
-                    self.sig_log.emit(f"Erreur recherche locale: {e}", "warning")
+                    self.sig_log.emit(f"Local search error: {e}", "warning")
 
-            # Étape B : Recherche catalogue si pas de résultat local
+            # Step B: Catalog search if not found locally
             if not video_match and self.musickit_bridge and self.musickit_bridge.is_configured:
                 try:
                     video_match = self.musickit_bridge.search_catalog_music_video(track)
@@ -120,32 +119,32 @@ class MusicVideoConverterWorker(QThread):
                 try:
                     video_match = self.catalog_search.search_music_video(track)
                 except Exception as e:
-                    self.sig_log.emit(f"Erreur recherche catalogue: {e}", "warning")
+                    self.sig_log.emit(f"Catalog search error: {e}", "warning")
 
-            # Étape C : Traitement du résultat (SEULS les clips vidéo confirmés sont ajoutés)
+            # Step C: Result processing (ONLY strictly verified music videos are added)
             if video_match:
                 try:
                     success = self.bridge.add_video_to_playlist(self.destination_playlist, video_match)
                     if success:
                         added_count += 1
                         status = "added"
-                        reason = f"Clip officiel ({video_match.source}) : {video_match.track_name}"
-                        self.sig_log.emit(f"✓ Ajouté : {video_match.track_name} ({video_match.artist_name})", "success")
+                        reason = f"Official music video ({video_match.source}): {video_match.track_name}"
+                        self.sig_log.emit(f"✓ Added: {video_match.track_name} ({video_match.artist_name})", "success")
                     else:
                         skipped_count += 1
                         status = "skipped"
-                        reason = "Piste rejetée : seul le format clip vidéo est accepté"
-                        self.sig_log.emit(f"✗ Rejeté : {video_match.track_name} (non vidéo)", "warning")
+                        reason = "Rejected: only music video format is accepted"
+                        self.sig_log.emit(f"✗ Rejected: {video_match.track_name} (non-video)", "warning")
                 except Exception as e:
                     skipped_count += 1
                     status = "error"
-                    reason = f"Clip trouvé mais échec d'ajout : {str(e)}"
-                    self.sig_log.emit(f"✗ Erreur d'ajout : {e}", "error")
+                    reason = f"Video found but failed to add: {str(e)}"
+                    self.sig_log.emit(f"✗ Add error: {e}", "error")
             else:
                 skipped_count += 1
                 status = "skipped"
-                reason = "Aucun clip vidéo officiel correspondant (seuil strict)"
-                self.sig_log.emit(f"- Ignoré : Aucun clip pour {track.name}", "info")
+                reason = "No matching official music video found (strict threshold)"
+                self.sig_log.emit(f"- Skipped: No video for {track.name}", "info")
 
             item_record = {
                 "track": track,
@@ -156,7 +155,6 @@ class MusicVideoConverterWorker(QThread):
             processed_items.append(item_record)
             self.sig_item_processed.emit(track, status, video_match, reason)
 
-            # Temporisation pour micro-animation et respect des quotas réseau
             if self.delay_ms > 0:
                 self.msleep(self.delay_ms)
 
@@ -172,6 +170,6 @@ class MusicVideoConverterWorker(QThread):
         }
         self.sig_finished.emit(summary)
         self.sig_log.emit(
-            f"Traitement terminé en {duration}s : {added_count} clips ajoutés, {skipped_count} ignorés.",
+            f"Finished in {duration}s: {added_count} videos added, {skipped_count} skipped.",
             "success" if not self._is_cancelled else "warning"
         )

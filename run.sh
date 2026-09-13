@@ -4,9 +4,9 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Vérification de python3
+# Check for python3
 if ! command -v python3 &> /dev/null; then
-    echo "Erreur: Python 3 est requis pour exécuter cette application."
+    echo "Error: Python 3 is required to run this application."
     exit 1
 fi
 

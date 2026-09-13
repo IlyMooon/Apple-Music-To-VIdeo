@@ -1,7 +1,7 @@
 """
-Panneau d'activité et de traitement en temps réel.
-Affiche la liste complète et aérée de toutes les pistes analysées (ajoutées et ignorées)
-en direct pendant la conversion, avec filtres par onglets, recherche et export.
+Real-time activity and track processing panel.
+Displays an organized, spacious list of all analyzed tracks (added & skipped)
+live during conversion, with tab filters, instant search, and export.
 """
 
 import json
@@ -12,12 +12,12 @@ from PyQt6.QtWidgets import (
     QTabWidget, QListWidget, QListWidgetItem, QWidget, QLineEdit,
     QFileDialog, QCheckBox, QSizePolicy
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, QSize
 from app.backend.bridge_interface import TrackInfo, VideoMatch
 
 
-class ProcessedTrackRow(QWidget):
-    """Ligne d'affichage pour une piste traitée."""
+class ProcessedTrackRow(QFrame):
+    """Spacious card row displaying a single processed track."""
 
     def __init__(self, track: TrackInfo, status: str, video_match: Optional[VideoMatch], reason: str, parent=None):
         super().__init__(parent)
@@ -25,76 +25,90 @@ class ProcessedTrackRow(QWidget):
         self.status = status
         self.video_match = video_match
         self.reason = reason
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.setObjectName("trackRow")
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.setMinimumHeight(72)
         self._init_ui()
+
+    def sizeHint(self) -> QSize:
+        return QSize(0, 76)
 
     def _init_ui(self):
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 7, 12, 7)
-        layout.setSpacing(12)
+        layout.setContentsMargins(14, 10, 14, 10)
+        layout.setSpacing(14)
+        layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
-        # 1. Badge d'état visuel clair
+        # 1. Clear status badge
         badge_lbl = QLabel(self)
-        badge_lbl.setFixedWidth(78)
+        badge_lbl.setFixedSize(86, 28)
         badge_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         if self.status == "added":
-            badge_lbl.setText("✓ AJOUTÉ")
+            badge_lbl.setText("✓ ADDED")
             badge_lbl.setStyleSheet("""
                 background-color: #13321C;
                 color: #30D158;
-                font-size: 10px;
+                font-size: 11px;
                 font-weight: 700;
-                padding: 3px 6px;
-                border-radius: 5px;
+                padding: 4px 8px;
+                border-radius: 6px;
                 border: 1px solid #1E5C31;
             """)
         else:
-            badge_lbl.setText("✕ IGNORÉ")
+            badge_lbl.setText("✕ SKIPPED")
             badge_lbl.setStyleSheet("""
                 background-color: #262A36;
                 color: #9DA3B4;
-                font-size: 10px;
+                font-size: 11px;
                 font-weight: 700;
-                padding: 3px 6px;
-                border-radius: 5px;
+                padding: 4px 8px;
+                border-radius: 6px;
                 border: 1px solid #363C4D;
             """)
         layout.addWidget(badge_lbl)
 
-        # 2. Informations de la piste
+        # 2. Track information with clear vertical hierarchy
         info_box = QVBoxLayout()
-        info_box.setSpacing(2)
+        info_box.setSpacing(4)
+        info_box.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
-        title_line = QLabel(f"{self.track.name}  —  {self.track.artist}", self)
-        title_line.setStyleSheet("font-size: 12px; font-weight: 600; color: #FFFFFF;")
+        # Line 1: Track title
+        title_line = QLabel(self.track.name, self)
+        title_line.setStyleSheet("font-size: 13px; font-weight: 700; color: #FFFFFF;")
         info_box.addWidget(title_line)
 
-        # Détail du clip ou raison de l'ignorance
+        # Line 2: Artist name & audio details
+        artist_line = QLabel(f"by  {self.track.artist}", self)
+        artist_line.setStyleSheet("font-size: 11px; font-weight: 500; color: #9DA3B4;")
+        info_box.addWidget(artist_line)
+
+        # Line 3: Match details or rejection reason
         if self.status == "added" and self.video_match:
-            detail_text = f"🎬 Clip vidéo : « {self.video_match.track_name} » par {self.video_match.artist_name}"
-            detail_color = "#4CD964"
+            detail_text = f"🎬 Music Video: “{self.video_match.track_name}” by {self.video_match.artist_name}"
+            detail_color = "#30D158"
         else:
-            detail_text = self.reason or "Aucun clip vidéo officiel correspondant"
+            detail_text = self.reason or "No matching official music video found"
             detail_color = "#7E8699"
 
         detail_line = QLabel(detail_text, self)
-        detail_line.setStyleSheet(f"font-size: 10px; color: {detail_color};")
+        detail_line.setStyleSheet(f"font-size: 11px; color: {detail_color};")
         info_box.addWidget(detail_line)
 
         layout.addLayout(info_box, 1)
 
-        # 3. Action directe si URL disponible
+        # 3. Direct action button if URL available
         if self.video_match and self.video_match.video_url:
-            btn_view = QPushButton("▶ Voir le clip", self)
+            btn_view = QPushButton("▶ Watch Video", self)
             btn_view.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_view.setFixedSize(115, 30)
             btn_view.setStyleSheet("""
                 QPushButton {
                     background-color: #282C38;
                     color: #FC3C44;
-                    font-size: 10px;
+                    font-size: 11px;
                     font-weight: 600;
                     border: 1px solid #3F4659;
-                    border-radius: 5px;
+                    border-radius: 6px;
                     padding: 4px 10px;
                 }
                 QPushButton:hover {
@@ -109,7 +123,7 @@ class ProcessedTrackRow(QWidget):
 
 
 class LiveProcessingPanel(QFrame):
-    """Panneau complet affichant la liste de toutes les pistes en temps réel."""
+    """Full-featured panel displaying all processed tracks in real time."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -122,17 +136,17 @@ class LiveProcessingPanel(QFrame):
         layout.setContentsMargins(14, 10, 14, 10)
         layout.setSpacing(10)
 
-        # 1. En-tête : Titre + Champ de recherche rapide
+        # 1. Header: Title + Quick search filter
         header = QHBoxLayout()
 
-        title_lbl = QLabel("📋  Détail des pistes traitées", self)
+        title_lbl = QLabel("📋  Processed Tracks Details", self)
         title_lbl.setStyleSheet("font-size: 13px; font-weight: 700; color: #FFFFFF;")
         header.addWidget(title_lbl)
 
         header.addStretch()
 
         self.search_input = QLineEdit(self)
-        self.search_input.setPlaceholderText("🔍 Filtrer les pistes...")
+        self.search_input.setPlaceholderText("🔍 Filter tracks...")
         self.search_input.setMinimumWidth(160)
         self.search_input.setMaximumWidth(280)
         self.search_input.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
@@ -141,7 +155,7 @@ class LiveProcessingPanel(QFrame):
 
         layout.addLayout(header)
 
-        # 2. Onglets : Tous | Convertis | Ignorés
+        # 2. Tabs: All | Converted | Skipped
         self.tabs = QTabWidget(self)
 
         self.list_all = QListWidget(self)
@@ -149,33 +163,33 @@ class LiveProcessingPanel(QFrame):
         self.list_skipped = QListWidget(self)
 
         for lst in [self.list_all, self.list_added, self.list_skipped]:
-            lst.setSpacing(3)
+            lst.setSpacing(8)
             lst.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
             lst.setResizeMode(QListWidget.ResizeMode.Adjust)
             lst.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        self.tabs.addTab(self.list_all, "Tous (0)")
-        self.tabs.addTab(self.list_added, "✓ Convertis (0)")
-        self.tabs.addTab(self.list_skipped, "✕ Ignorés (0)")
+        self.tabs.addTab(self.list_all, "All (0)")
+        self.tabs.addTab(self.list_added, "✓ Added (0)")
+        self.tabs.addTab(self.list_skipped, "✕ Skipped (0)")
         self.tabs.currentChanged.connect(self._apply_filter)
 
         layout.addWidget(self.tabs, 1)
 
-        # 3. Pied de page : Compteurs et boutons d'export
+        # 3. Footer: Counters, auto-scroll, and export button
         footer = QHBoxLayout()
 
-        self.lbl_stats = QLabel("En attente de traitement...", self)
+        self.lbl_stats = QLabel("Waiting to start...", self)
         self.lbl_stats.setStyleSheet("font-size: 12px; color: #A1A7B8; font-weight: 500;")
         footer.addWidget(self.lbl_stats)
 
         footer.addStretch()
 
-        self.chk_autoscroll = QCheckBox("Défilement automatique", self)
+        self.chk_autoscroll = QCheckBox("Auto-scroll", self)
         self.chk_autoscroll.setChecked(True)
         self.chk_autoscroll.setStyleSheet("font-size: 11px; color: #8E96AB;")
         footer.addWidget(self.chk_autoscroll)
 
-        self.btn_export = QPushButton("💾 Exporter le rapport", self)
+        self.btn_export = QPushButton("💾 Export Report", self)
         self.btn_export.setObjectName("secondaryButton")
         self.btn_export.clicked.connect(self._export_report)
         footer.addWidget(self.btn_export)
@@ -183,18 +197,18 @@ class LiveProcessingPanel(QFrame):
         layout.addLayout(footer)
 
     def clear(self):
-        """Réinitialise la liste pour une nouvelle conversion."""
+        """Reset the lists for a new conversion run."""
         self._items.clear()
         self.list_all.clear()
         self.list_added.clear()
         self.list_skipped.clear()
-        self.tabs.setTabText(0, "Tous (0)")
-        self.tabs.setTabText(1, "✓ Convertis (0)")
-        self.tabs.setTabText(2, "✕ Ignorés (0)")
-        self.lbl_stats.setText("Traitement en cours...")
+        self.tabs.setTabText(0, "All (0)")
+        self.tabs.setTabText(1, "✓ Added (0)")
+        self.tabs.setTabText(2, "✕ Skipped (0)")
+        self.lbl_stats.setText("Processing...")
 
     def add_processed_item(self, track: TrackInfo, status: str, video_match: Optional[VideoMatch], reason: str):
-        """Ajoute dynamiquement une piste traitée en direct pendant le scan."""
+        """Dynamically add a processed track item in real time."""
         record = {
             "track": track,
             "status": status,
@@ -203,10 +217,10 @@ class LiveProcessingPanel(QFrame):
         }
         self._items.append(record)
 
-        # Ajout dans l'onglet Tous
+        # Append to All tab
         self._append_row(self.list_all, track, status, video_match, reason)
 
-        # Ajout dans l'onglet spécifique
+        # Append to specific tab
         if status == "added":
             self._append_row(self.list_added, track, status, video_match, reason)
         else:
@@ -216,15 +230,15 @@ class LiveProcessingPanel(QFrame):
         skipped_count = self.list_skipped.count()
         total_count = len(self._items)
 
-        self.tabs.setTabText(0, f"Tous ({total_count})")
-        self.tabs.setTabText(1, f"✓ Convertis ({added_count})")
-        self.tabs.setTabText(2, f"✕ Ignorés ({skipped_count})")
+        self.tabs.setTabText(0, f"All ({total_count})")
+        self.tabs.setTabText(1, f"✓ Added ({added_count})")
+        self.tabs.setTabText(2, f"✕ Skipped ({skipped_count})")
 
         self.lbl_stats.setText(
-            f"Analysés : {total_count}  |  ✓ Ajoutés : {added_count}  |  ✕ Ignorés : {skipped_count}"
+            f"Scanned: {total_count}  |  ✓ Added: {added_count}  |  ✕ Skipped: {skipped_count}"
         )
 
-        # Auto-scroll si coché
+        # Auto-scroll if enabled
         if self.chk_autoscroll.isChecked():
             current_list = self._get_active_list()
             current_list.scrollToBottom()
@@ -232,7 +246,7 @@ class LiveProcessingPanel(QFrame):
     def _append_row(self, list_widget: QListWidget, track: TrackInfo, status: str, video_match: Optional[VideoMatch], reason: str):
         row_widget = ProcessedTrackRow(track, status, video_match, reason, self)
         list_item = QListWidgetItem(list_widget)
-        list_item.setSizeHint(row_widget.sizeHint())
+        list_item.setSizeHint(QSize(0, 80))
         list_widget.addItem(list_item)
         list_widget.setItemWidget(list_item, row_widget)
 
@@ -245,7 +259,7 @@ class LiveProcessingPanel(QFrame):
         return self.list_all
 
     def _apply_filter(self):
-        """Filtre les éléments visibles selon le texte de recherche."""
+        """Filter visible items according to search text."""
         filter_text = self.search_input.text().lower().strip()
         current_list = self._get_active_list()
 
@@ -258,15 +272,15 @@ class LiveProcessingPanel(QFrame):
                 item.setHidden(not is_match)
 
     def _export_report(self):
-        """Exporte le rapport complet."""
+        """Export the full report to a file."""
         if not self._items:
             return
 
         file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "Exporter le rapport de conversion",
-            "rapport_conversion_apple_music.json",
-            "Fichiers JSON (*.json);;Fichiers texte (*.txt)"
+            "Export Conversion Report",
+            "apple_music_conversion_report.json",
+            "JSON Files (*.json);;Text Files (*.txt)"
         )
         if not file_path:
             return
@@ -295,12 +309,12 @@ class LiveProcessingPanel(QFrame):
                     json.dump(data, f, indent=2, ensure_ascii=False)
             else:
                 with open(file_path, "w", encoding="utf-8") as f:
-                    f.write("=== RAPPORT DE CONVERSION APPLE MUSIC TO VIDEO ===\n\n")
-                    f.write(f"Total analysé : {len(self._items)}\n")
-                    f.write(f"Clips ajoutés : {len(added_items)}\n")
-                    f.write(f"Titres ignorés : {len(skipped_items)}\n\n")
-                    f.write("--- LISTE DES PISTES ---\n")
+                    f.write("=== APPLE MUSIC TO VIDEO CONVERSION REPORT ===\n\n")
+                    f.write(f"Total scanned: {len(self._items)}\n")
+                    f.write(f"Videos added: {len(added_items)}\n")
+                    f.write(f"Tracks skipped: {len(skipped_items)}\n\n")
+                    f.write("--- TRACK LIST ---\n")
                     for it in self._items:
                         f.write(f"[{it['status'].upper()}] {it['track'].name} — {it['track'].artist} ({it['reason']})\n")
         except Exception as e:
-            print(f"Erreur d'export: {e}")
+            print(f"Export error: {e}")

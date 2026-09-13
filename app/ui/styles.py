@@ -203,21 +203,30 @@ QListWidget {{
 }}
 
 QListWidget::item {{
-    background-color: {COLOR_BG_CARD_ALT};
-    border: 1px solid {COLOR_BORDER};
-    border-radius: 10px;
-    margin-bottom: 6px;
-    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    padding: 0px;
+    margin: 0px;
 }}
 
 QListWidget::item:hover {{
-    background-color: #282C3A;
-    border: 1px solid #3F4659;
+    background: transparent;
 }}
 
 QListWidget::item:selected {{
-    background-color: #2F3342;
-    border: 1px solid {COLOR_ACCENT};
+    background: transparent;
+}}
+
+/* Ligne de piste traitée (Carte indépendante aérée) */
+QFrame#trackRow {{
+    background-color: #1A1C24;
+    border: 1px solid #282C38;
+    border-radius: 10px;
+}}
+
+QFrame#trackRow:hover {{
+    background-color: #21242E;
+    border: 1px solid #3F4659;
 }}
 
 /* Scrollbars modernes macOS */

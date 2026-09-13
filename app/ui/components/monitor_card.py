@@ -1,7 +1,7 @@
 """
-Zone de prévisualisation en temps réel de la piste en cours de traitement.
-Affiche la pochette / miniature du clip, le titre, l'artiste,
-et un badge animé à statut dynamique ([Ajouté], [Ignoré], [Recherche...]).
+Real-time preview card for the track currently being scanned and matched.
+Displays the album/video artwork thumbnail, track title, artist,
+and an animated dynamic status badge ([Added], [Skipped], [Searching...]).
 """
 
 from PyQt6.QtWidgets import (
@@ -13,10 +13,10 @@ import requests
 
 
 class StatusBadge(QLabel):
-    """Badge d'état avec couleur adaptée et micro-animation de fondu."""
+    """Status badge with adaptive colors and smooth fade micro-animation."""
 
     def __init__(self, parent=None):
-        super().__init__("En attente", parent)
+        super().__init__("Idle", parent)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setFixedHeight(26)
         self.setMinimumWidth(110)
@@ -31,11 +31,10 @@ class StatusBadge(QLabel):
         anim.setEndValue(1.0)
         anim.setEasingCurve(QEasingCurve.Type.OutCubic)
         anim.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
-        # Conserver la référence pour éviter garbage collection
         self._current_anim = anim
 
     def set_idle(self):
-        self.setText("⏸  En attente")
+        self.setText("⏸  Idle")
         self.setStyleSheet("""
             background-color: #212532;
             color: #8E96AB;
@@ -48,7 +47,7 @@ class StatusBadge(QLabel):
         self._animate_transition()
 
     def set_searching(self, track_name: str = ""):
-        self.setText("🔍  Recherche...")
+        self.setText("🔍  Searching...")
         self.setStyleSheet("""
             background-color: #16263D;
             color: #5AA9FF;
@@ -60,7 +59,7 @@ class StatusBadge(QLabel):
         """)
         self._animate_transition()
 
-    def set_added(self, source_text: str = "Ajouté"):
+    def set_added(self, source_text: str = "Video Added"):
         self.setText(f"✓  {source_text}")
         self.setStyleSheet("""
             background-color: #12301B;
@@ -73,7 +72,7 @@ class StatusBadge(QLabel):
         """)
         self._animate_transition()
 
-    def set_skipped(self, reason: str = "Ignoré"):
+    def set_skipped(self, reason: str = "Skipped"):
         self.setText(f"✕  {reason}")
         self.setStyleSheet("""
             background-color: #2C2023;
@@ -88,7 +87,7 @@ class StatusBadge(QLabel):
 
 
 class RealtimeMonitorCard(QFrame):
-    """Carte de monitoring en direct du morceau scanné."""
+    """Real-time monitoring card for the currently scanned song."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -101,7 +100,7 @@ class RealtimeMonitorCard(QFrame):
         layout.setContentsMargins(14, 10, 14, 10)
         layout.setSpacing(12)
 
-        # 1. Miniature / Pochette d'album
+        # 1. Thumbnail / Album artwork
         self.thumb_label = QLabel(self)
         self.thumb_label.setFixedSize(54, 54)
         self.thumb_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -115,12 +114,12 @@ class RealtimeMonitorCard(QFrame):
         self.thumb_label.setText("🎵")
         layout.addWidget(self.thumb_label)
 
-        # 2. Informations du morceau (Titre & Artiste)
+        # 2. Track info (Title & Artist)
         info_layout = QVBoxLayout()
         info_layout.setSpacing(2)
         info_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
-        self.lbl_subtitle = QLabel("PRÉVISUALISATION EN TEMPS RÉEL", self)
+        self.lbl_subtitle = QLabel("REAL-TIME SCAN MONITOR", self)
         self.lbl_subtitle.setStyleSheet("""
             font-size: 9px;
             font-weight: 700;
@@ -129,7 +128,7 @@ class RealtimeMonitorCard(QFrame):
         """)
         info_layout.addWidget(self.lbl_subtitle)
 
-        self.lbl_track = QLabel("En attente de démarrage...", self)
+        self.lbl_track = QLabel("Ready to convert", self)
         self.lbl_track.setStyleSheet("""
             font-size: 13px;
             font-weight: 700;
@@ -137,7 +136,7 @@ class RealtimeMonitorCard(QFrame):
         """)
         info_layout.addWidget(self.lbl_track)
 
-        self.lbl_artist = QLabel("Sélectionnez une playlist et cliquez sur Lancer", self)
+        self.lbl_artist = QLabel("Select a playlist and click 'Convert to Music Videos'", self)
         self.lbl_artist.setStyleSheet("""
             font-size: 11px;
             color: #A1A7B7;
@@ -155,7 +154,7 @@ class RealtimeMonitorCard(QFrame):
 
         layout.addLayout(info_layout, 1)
 
-        # 3. Badge dynamique
+        # 3. Dynamic badge
         badge_layout = QVBoxLayout()
         badge_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight)
         self.badge = StatusBadge(self)
@@ -163,32 +162,31 @@ class RealtimeMonitorCard(QFrame):
         layout.addLayout(badge_layout)
 
     def set_scanning_track(self, title: str, artist: str):
-        """Met à jour l'affichage lors du début de recherche pour un titre."""
+        """Update display when beginning to search a track."""
         self.lbl_track.setText(title)
         self.lbl_artist.setText(artist)
-        self.lbl_details.setText("Interrogation du catalogue...")
+        self.lbl_details.setText("Querying Apple Music catalog...")
         self.thumb_label.setText("🎬")
         self.badge.set_searching()
 
     def set_result(self, title: str, artist: str, status: str, reason: str, artwork_url: str = ""):
-        """Affiche le résultat final pour la piste analysée."""
+        """Display final result for the analyzed track."""
         self.lbl_track.setText(title)
         self.lbl_artist.setText(artist)
         self.lbl_details.setText(reason)
 
         if status == "added":
-            self.badge.set_added("Clip Ajouté")
+            self.badge.set_added("Video Added")
         else:
-            self.badge.set_skipped("Ignoré")
+            self.badge.set_skipped("Skipped")
 
-        # Chargement asynchrone ou direct de la miniature si disponible
         if artwork_url:
             self._load_thumbnail(artwork_url)
         else:
             self.thumb_label.setText("🎬" if status == "added" else "🎵")
 
     def _load_thumbnail(self, url: str):
-        """Tente de charger l'image d'illustration si URL valide."""
+        """Attempt to load artwork image asynchronously."""
         try:
             resp = requests.get(url, timeout=1.5)
             if resp.status_code == 200:
@@ -205,9 +203,9 @@ class RealtimeMonitorCard(QFrame):
             self.thumb_label.setText("🎬")
 
     def reset(self):
-        """Réinitialise la carte de monitoring."""
-        self.lbl_track.setText("Prêt pour la conversion")
-        self.lbl_artist.setText("Cliquez sur 'Lancer la conversion' pour commencer")
+        """Reset the monitor card."""
+        self.lbl_track.setText("Ready to convert")
+        self.lbl_artist.setText("Click 'Convert to Music Videos' to start")
         self.lbl_details.setText("")
         self.thumb_label.setText("🎵")
         self.thumb_label.setPixmap(QPixmap())

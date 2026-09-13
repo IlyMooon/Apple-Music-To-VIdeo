@@ -23,13 +23,13 @@ def parse_arguments():
     parser.add_argument(
         "--demo",
         action="store_true",
-        help="Active le Mode Démo avec bibliothèque de démonstration sans interaction avec Music.app"
+        help="Enable Demo Mode with offline mock data (no Music.app required)"
     )
     parser.add_argument(
         "--storefront",
         type=str,
         default=None,
-        help="Code pays du catalogue Apple Music (ex: fr, us, gb)"
+        help="Apple Music storefront country code (e.g., us, gb, fr, de, ca)"
     )
     return parser.parse_args()
 

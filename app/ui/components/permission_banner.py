@@ -1,6 +1,6 @@
 """
-Bandeau d'assistance et de gestion des permissions macOS (Apple Events / Automatisation).
-Apparaît lorsque macOS requiert une autorisation dans Réglages Système ou si Musique est fermée.
+macOS Permissions banner & guidance (Apple Events / Automation).
+Appears when macOS requires authorization in System Settings or if Music is closed.
 """
 
 from PyQt6.QtWidgets import (
@@ -11,7 +11,7 @@ from app.backend.applescript_bridge import AppleScriptBridge
 
 
 class PermissionBanner(QFrame):
-    """Bandeau élégant d'alerte et de guidage des autorisations macOS."""
+    """Elegant alert banner for macOS automation permissions."""
 
     sig_switch_to_demo = pyqtSignal()
     sig_retry_check = pyqtSignal()
@@ -35,21 +35,21 @@ class PermissionBanner(QFrame):
         layout.setContentsMargins(14, 8, 14, 8)
         layout.setSpacing(12)
 
-        # Icône
+        # Icon
         icon = QLabel("⚠️", self)
         icon.setStyleSheet("font-size: 16px;")
         layout.addWidget(icon)
 
         # Message
         self.lbl_message = QLabel(
-            "Autorisation macOS requise : Autorisez le contrôle de Musique dans Réglages Système > Confidentialité > Automatisation.",
+            "macOS Permission Required: Allow control of Music in System Settings > Privacy & Security > Automation.",
             self
         )
         self.lbl_message.setStyleSheet("font-size: 12px; color: #FFD494; font-weight: 500;")
         layout.addWidget(self.lbl_message, 1)
 
-        # Bouton Réglages
-        self.btn_open_settings = QPushButton("Ouvrir Réglages Système", self)
+        # Settings button
+        self.btn_open_settings = QPushButton("Open System Settings", self)
         self.btn_open_settings.setStyleSheet("""
             background-color: #593510;
             color: #FFFFFF;
@@ -62,8 +62,8 @@ class PermissionBanner(QFrame):
         self.btn_open_settings.clicked.connect(AppleScriptBridge.open_automation_settings)
         layout.addWidget(self.btn_open_settings)
 
-        # Bouton Mode Démo
-        self.btn_demo = QPushButton("Passer en Mode Démo", self)
+        # Demo mode button
+        self.btn_demo = QPushButton("Switch to Demo Mode", self)
         self.btn_demo.setStyleSheet("""
             background-color: #3B2A1E;
             color: #FFC078;
@@ -76,9 +76,9 @@ class PermissionBanner(QFrame):
         self.btn_demo.clicked.connect(self.sig_switch_to_demo.emit)
         layout.addWidget(self.btn_demo)
 
-        # Bouton Réessayer
+        # Retry button
         self.btn_retry = QPushButton("⟳", self)
-        self.btn_retry.setToolTip("Revérifier l'accès")
+        self.btn_retry.setToolTip("Re-check permissions")
         self.btn_retry.setFixedSize(26, 26)
         self.btn_retry.setStyleSheet("""
             background-color: #3B2A1E;

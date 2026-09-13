@@ -1,7 +1,7 @@
 """
-Fenêtre principale de l'application Apple Music To Video.
-Assemble la barre de titre macOS, le bandeau de permissions, la sélection de playlists,
-le monitoring en temps réel, le déclencheur de conversion et le tiroir de résumé.
+Main Window for the Apple Music To Video macOS application.
+Integrates custom macOS title bar, permission banner, playlist selector,
+real-time scan monitor, action controls, and live processing panel.
 """
 
 from typing import Optional
@@ -29,7 +29,7 @@ from PyQt6.QtCore import QThread, pyqtSignal
 
 
 class PlaylistScannerThread(QThread):
-    """Thread dédié au scan asynchrone des playlists pour ne jamais figer l'interface."""
+    """Thread dedicated to asynchronous playlist scanning to keep UI fluid."""
     sig_loaded = pyqtSignal(list, bool, str)
 
     def __init__(self, bridge: BaseMusicBridge, is_demo: bool, parent=None):
@@ -54,13 +54,13 @@ class PlaylistScannerThread(QThread):
         except Exception as e:
             if not self.is_demo:
                 is_ready = False
-                message = f"Erreur de lecture: {e}"
+                message = f"Read error: {e}"
 
         self.sig_loaded.emit(playlists, is_ready, message)
 
 
 class MainWindow(QMainWindow):
-    """Fenêtre principale de l'application."""
+    """Main Application Window."""
 
     sig_playlists_loaded = pyqtSignal(list)
 
@@ -70,11 +70,11 @@ class MainWindow(QMainWindow):
         self.resize(840, 640)
         self.setMinimumSize(780, 560)
 
-        # Style macOS Frameless avec bords arrondis
+        # macOS Frameless style with rounded corners
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
-        # Bridges et services
+        # Bridges and services
         self.bridge: BaseMusicBridge = None
         self.catalog_service = CatalogSearchService(
             storefront=config.storefront,
@@ -84,18 +84,18 @@ class MainWindow(QMainWindow):
         self.worker: Optional[MusicVideoConverterWorker] = None
         self.scanner_thread: Optional[PlaylistScannerThread] = None
 
-        # Initialisation UI
+        # Initialize UI
         self._init_ui()
         self.setStyleSheet(MAIN_STYLE_SHEET)
 
-        # Initialisation du bridge approprié
+        # Initialize backend bridge
         self._setup_bridge()
 
-        # Lancement immédiat du scan asynchrone (non-bloquant grâce au QThread)
+        # Launch initial asynchronous scan
         self._refresh_playlists()
 
     def _init_ui(self):
-        # Conteneur principal avec ombre portée douce macOS
+        # Central container with macOS drop shadow
         self.central_container = QWidget(self)
         self.central_container.setObjectName("centralContainer")
         self.central_container.setStyleSheet("""
@@ -106,7 +106,6 @@ class MainWindow(QMainWindow):
             }
         """)
 
-        # Ombre portée de la fenêtre
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(28)
         shadow.setColor(QColor(0, 0, 0, 180))
@@ -119,46 +118,46 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 16)
         main_layout.setSpacing(12)
 
-        # 1. Barre de titre personnalisée
+        # 1. Custom Title Bar
         self.title_bar = MacTitleBar(self, "Apple Music To Video")
         self.title_bar.sig_open_settings.connect(self._open_settings)
         main_layout.addWidget(self.title_bar)
 
-        # Contenu intérieur avec marges
+        # Inner content layout
         inner_content = QVBoxLayout()
         inner_content.setContentsMargins(16, 4, 16, 4)
         inner_content.setSpacing(10)
 
-        # 2. Bandeau d'assistance des permissions macOS
+        # 2. macOS Permission Banner
         self.permission_banner = PermissionBanner(self)
         self.permission_banner.sig_switch_to_demo.connect(self._switch_to_demo_mode)
         self.permission_banner.sig_retry_check.connect(self._retry_permission_check)
         inner_content.addWidget(self.permission_banner)
 
-        # 3. Sélecteur Source -> Destination
+        # 3. Source -> Destination Playlist Selector
         self.playlist_card = PlaylistSelectorCard(self)
         self.playlist_card.sig_refresh_requested.connect(self._refresh_playlists)
         self.playlist_card.sig_selection_changed.connect(self._on_playlist_selection_changed)
         inner_content.addWidget(self.playlist_card)
 
-        # 4. Zone d'Action Centrale & Contrôle
+        # 4. Central Action Card & Controls
         self.action_card = QFrame(self)
         self.action_card.setObjectName("cardFrame")
         action_layout = QVBoxLayout(self.action_card)
         action_layout.setContentsMargins(16, 10, 16, 10)
         action_layout.setSpacing(10)
 
-        # Boutons Lancer / Annuler
+        # Action buttons
         btn_box = QHBoxLayout()
 
-        self.btn_convert = QPushButton("🚀  Lancer la conversion en Clips Vidéo", self)
+        self.btn_convert = QPushButton("🚀  Convert to Music Videos", self)
         self.btn_convert.setObjectName("primaryButton")
         self.btn_convert.setFixedHeight(40)
         self.btn_convert.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_convert.clicked.connect(self._start_conversion)
         btn_box.addWidget(self.btn_convert, 1)
 
-        self.btn_cancel = QPushButton("🛑  Annuler", self)
+        self.btn_cancel = QPushButton("🛑  Cancel", self)
         self.btn_cancel.setObjectName("dangerButton")
         self.btn_cancel.setFixedHeight(40)
         self.btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -168,23 +167,23 @@ class MainWindow(QMainWindow):
 
         action_layout.addLayout(btn_box)
 
-        # Barre de progression
+        # Progress bar
         self.progress_bar = AnimatedProgressBar(self)
         action_layout.addWidget(self.progress_bar)
 
         inner_content.addWidget(self.action_card)
 
-        # 5. Zone de prévisualisation en temps réel (Morceau en cours, pochette, badge)
+        # 5. Real-time Scan Preview Monitor
         self.monitor_card = RealtimeMonitorCard(self)
         inner_content.addWidget(self.monitor_card)
 
-        # 6. Panneau d'activité en temps réel complet et aéré
+        # 6. Live Processing Panel (Spacious & Responsive)
         self.live_panel = LiveProcessingPanel(self)
         inner_content.addWidget(self.live_panel, 1)
 
         main_layout.addLayout(inner_content)
 
-        # 7. Poignée de redimensionnement discrète
+        # 7. Subtle resize grip
         bottom_bar = QHBoxLayout()
         bottom_bar.setContentsMargins(14, 0, 6, 2)
         bottom_bar.addStretch()
@@ -194,16 +193,15 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(bottom_bar)
 
     def _setup_bridge(self):
-        """Initialise le bridge selon la configuration utilisateur."""
+        """Initialize backend bridge according to settings."""
         if config.demo_mode:
             self.bridge = MockMusicBridge()
-            self.title_bar.set_backend_badge("🧪 Mode Démo Actif", is_demo=True)
+            self.title_bar.set_backend_badge("🧪 Demo Mode Active", is_demo=True)
             self.permission_banner.hide_warning()
         else:
             self.bridge = AppleScriptBridge()
             self.title_bar.set_backend_badge("⚡ AppleScript Bridge", is_demo=False)
 
-        # Configuration optionnelle MusicKit
         if config.has_musickit_credentials:
             self.musickit_bridge = MusicKitBridge(
                 developer_token=config.musickit_developer_token,
@@ -214,23 +212,23 @@ class MainWindow(QMainWindow):
             self.musickit_bridge = None
 
     def _retry_permission_check(self):
-        """Vérifie à nouveau l'accès AppleScript."""
+        """Recheck AppleScript access."""
         self._refresh_playlists()
 
     def _switch_to_demo_mode(self):
-        """Bascule vers le mode démo pour explorer l'interface immédiatement."""
+        """Switch to demo mode to explore offline."""
         config.demo_mode = True
         self._setup_bridge()
         self._refresh_playlists()
 
     def _refresh_playlists(self):
-        """Scanne les playlists disponibles."""
+        """Scan available playlists."""
         self.playlist_card.btn_refresh.setEnabled(False)
-        self.playlist_card.btn_refresh.setText("⟳ Scan...")
+        self.playlist_card.btn_refresh.setText("⟳ Scanning...")
 
         if config.demo_mode:
             playlists = self.bridge.get_playlists()
-            self._on_playlists_scanned(playlists, True, "Mode Démo actif")
+            self._on_playlists_scanned(playlists, True, "Demo Mode active")
             return
 
         self.scanner_thread = PlaylistScannerThread(self.bridge, False, self)
@@ -238,7 +236,7 @@ class MainWindow(QMainWindow):
         self.scanner_thread.start()
 
     def _on_playlists_scanned(self, playlists: list, is_ready: bool, message: str):
-        """Callback après la fin du scan asynchrone des playlists."""
+        """Callback after asynchronous playlist scan completes."""
         if not config.demo_mode:
             if not is_ready:
                 self.permission_banner.show_warning(message)
@@ -247,53 +245,53 @@ class MainWindow(QMainWindow):
 
         self.playlist_card.populate_playlists(playlists)
         self.playlist_card.btn_refresh.setEnabled(True)
-        self.playlist_card.btn_refresh.setText("⟳ Actualiser")
+        self.playlist_card.btn_refresh.setText("⟳ Refresh")
         self.sig_playlists_loaded.emit(playlists)
 
     def _on_playlist_selection_changed(self, source: str, dest: str):
-        """Valide la cohérence du bouton de démarrage."""
+        """Validate start button state."""
         can_start = bool(source and dest and source != dest)
         self.btn_convert.setEnabled(can_start)
         if not source:
-            self.btn_convert.setToolTip("Sélectionnez une playlist source")
+            self.btn_convert.setToolTip("Select a source playlist")
         elif not dest:
-            self.btn_convert.setToolTip("Indiquez une playlist de destination")
+            self.btn_convert.setToolTip("Specify a target playlist")
         elif source == dest:
-            self.btn_convert.setToolTip("La destination doit être différente de la source")
+            self.btn_convert.setToolTip("Target playlist must have a different name from the source")
         else:
             self.btn_convert.setToolTip("")
 
     def _start_conversion(self):
-        """Lance le thread de traitement asynchrone."""
+        """Start asynchronous conversion worker thread."""
         source = self.playlist_card.get_source_playlist()
         dest = self.playlist_card.get_destination_playlist()
 
         if not source or not dest:
             QMessageBox.warning(
                 self,
-                "Sélection requise",
-                "Veuillez choisir une playlist source et un nom de destination valide."
+                "Selection Required",
+                "Please choose a source playlist and a valid destination name."
             )
             return
 
         if source == dest:
             QMessageBox.warning(
                 self,
-                "Nom identique",
-                "La playlist de destination doit avoir un nom distinct de la source pour éviter d'écraser vos données."
+                "Identical Name",
+                "The target playlist must have a different name from the source to avoid overwriting your data."
             )
             return
 
-        # Mise à jour des états graphiques
+        # Update UI state
         self.btn_convert.setEnabled(False)
-        self.btn_convert.setText("Traitement en cours...")
+        self.btn_convert.setText("Converting...")
         self.btn_cancel.setVisible(True)
         self.playlist_card.set_enabled_controls(False)
         self.progress_bar.reset()
         self.monitor_card.reset()
         self.live_panel.clear()
 
-        # Démarrage du QThread
+        # Start worker thread
         self.worker = MusicVideoConverterWorker(
             bridge=self.bridge,
             catalog_search=self.catalog_service,
@@ -313,10 +311,10 @@ class MainWindow(QMainWindow):
         self.worker.start()
 
     def _cancel_conversion(self):
-        """Demande l'arrêt du worker."""
+        """Request worker stop."""
         if self.worker and self.worker.isRunning():
             self.btn_cancel.setEnabled(False)
-            self.btn_cancel.setText("Arrêt...")
+            self.btn_cancel.setText("Stopping...")
             self.worker.cancel()
 
     def _on_worker_started(self, total: int):
@@ -328,11 +326,8 @@ class MainWindow(QMainWindow):
     def _on_worker_item_processed(self, track, status: str, video_match, reason: str):
         artwork = video_match.artwork_url if video_match else ""
         self.monitor_card.set_result(track.name, track.artist, status, reason, artwork)
-
-        # Ajout immédiat dans le panneau en direct (accessible et défilable)
         self.live_panel.add_processed_item(track, status, video_match, reason)
 
-        # Mise à jour dynamique de la barre de progression
         total = self.progress_bar._total_val
         current = self.live_panel.list_all.count()
         added = self.live_panel.list_added.count()
@@ -340,38 +335,37 @@ class MainWindow(QMainWindow):
         self.progress_bar.update_progress(current, total, added, skipped)
 
     def _on_worker_finished(self, summary: dict):
-        """Traitement de fin : réactivation des contrôles et actualisation finale."""
+        """Handle worker completion: restore controls and refresh playlists."""
         self.btn_convert.setEnabled(True)
-        self.btn_convert.setText("🚀  Lancer la conversion en Clips Vidéo")
+        self.btn_convert.setText("🚀  Convert to Music Videos")
         self.btn_cancel.setVisible(False)
         self.btn_cancel.setEnabled(True)
-        self.btn_cancel.setText("🛑  Annuler")
+        self.btn_cancel.setText("🛑  Cancel")
         self.playlist_card.set_enabled_controls(True)
 
-        # Mise à jour barre finale
         total = summary.get("total", 0)
         added = summary.get("added", 0)
         skipped = summary.get("skipped", 0)
         self.progress_bar.update_progress(total, total, added, skipped)
 
-        # Rafraîchir les playlists pour que la nouvelle playlist apparaisse dans la liste
+        # Refresh playlists to reflect the newly created playlist
         QTimer.singleShot(1000, self._refresh_playlists)
 
     def _on_worker_error(self, message: str):
         self.btn_convert.setEnabled(True)
-        self.btn_convert.setText("🚀  Lancer la conversion en Clips Vidéo")
+        self.btn_convert.setText("🚀  Convert to Music Videos")
         self.btn_cancel.setVisible(False)
         self.playlist_card.set_enabled_controls(True)
-        QMessageBox.critical(self, "Erreur de traitement", message)
+        QMessageBox.critical(self, "Processing Error", message)
 
     def _open_settings(self):
-        """Ouvre la boîte de dialogue des préférences."""
+        """Open settings dialog."""
         dlg = SettingsDialog(self)
         dlg.sig_settings_saved.connect(self._on_settings_saved)
         dlg.exec()
 
     def _on_settings_saved(self):
-        """Recharge les services suite à une modification des réglages."""
+        """Reload services after settings change."""
         self.catalog_service.storefront = config.storefront
         self.catalog_service.tolerance = config.get("search_tolerance", 0.85)
         self._setup_bridge()

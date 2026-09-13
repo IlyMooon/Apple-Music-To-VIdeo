@@ -1,9 +1,9 @@
-# 🎬 Apple Music To Video (macOS) `v1.0`
+# 🎬 Apple Music To Video (macOS) `v1.0.1`
 
 [![macOS](https://img.shields.io/badge/Platform-macOS%20Sonoma%20%7C%20Sequoia-black?style=flat-square&logo=apple)](https://www.apple.com/macos/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python)](https://www.python.org/)
 [![PyQt6](https://img.shields.io/badge/Framework-PyQt6-green?style=flat-square&logo=qt)](https://riverbankcomputing.com/software/pyqt/)
-[![Version](https://img.shields.io/badge/Version-v1.0.0-red?style=flat-square)](https://github.com/)
+[![Version](https://img.shields.io/badge/Version-v1.0.1-red?style=flat-square)](https://github.com/)
 
 A sleek, native macOS desktop application built with **Python** and **PyQt6** that seamlessly converts your existing **Apple Music** audio playlists into dedicated **Music Video (Clips Vidéo)** playlists.
 
@@ -140,7 +140,15 @@ Apple Music To Video/
 
 ## 🏷️ Versioning & Changelog
 
-### `v1.0.0` (Current Release)
+### `v1.0.1` (Current Release)
+- **Internationalization (English)**:
+  - Translated all user interface elements, dialogue boxes, status indicators, and notification badges into English.
+- **Spacious Processed Tracks List**:
+  - Restructured track row cards with dedicated vertical spacing (80px height hint + 8px separation).
+  - Clearly partitioned Track Title, Artist Name, and Match Details to prevent crammed or overlapping text.
+  - Eliminated Qt list widget item padding conflicts for crystal-clear readability.
+
+### `v1.0.0`
 - **High-Precision Matching**:
   - Implemented multi-strategy artist comparison (primary artist + token set Jaccard matching).
   - Raised default similarity tolerance to 0.85 with automated configuration migration.

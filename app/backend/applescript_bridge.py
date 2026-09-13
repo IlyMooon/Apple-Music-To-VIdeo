@@ -37,13 +37,13 @@ class AppleScriptBridge(BaseMusicBridge):
             stderr = res.stderr.strip()
             return False, stderr
         except subprocess.TimeoutExpired:
-            return False, "TIMEOUT: L'application Musique ne répond pas ou attend une autorisation macOS."
+            return False, "TIMEOUT: Music.app is not responding or awaiting macOS authorization."
         except Exception as e:
-            return False, f"ERREUR: {str(e)}"
+            return False, f"ERROR: {str(e)}"
 
     def check_availability(self) -> Tuple[bool, str]:
         """
-        Vérifie si Music.app est accessible et si les autorisations Apple Events sont accordées.
+        Check if Music.app is accessible and Apple Events permissions are granted.
         """
         script = """
         tell application "Music"
@@ -53,17 +53,17 @@ class AppleScriptBridge(BaseMusicBridge):
         success, output = self.run_script(script, timeout=2.5)
         if success and "Music" in output:
             self._permission_cached = True
-            return True, "Application Musique connectée et autorisée."
+            return True, "Music.app connected and authorized."
 
         self._permission_cached = False
         if "TIMEOUT" in output:
-            return False, "En attente d'autorisation macOS (Vérifiez les boîtes de dialogue ou Réglages Système)."
+            return False, "Waiting for macOS permission (Check system dialogs or System Settings)."
         if "-1743" in output or "Not authorized to send Apple events" in output:
-            return False, "Autorisation refusée: Vous devez autoriser le contrôle de Musique dans Réglages Système > Confidentialité et sécurité > Automatisation."
+            return False, "Permission denied: Grant control of Music in System Settings > Privacy & Security > Automation."
         if "-600" in output:
-            return False, "L'application Musique est fermée ou en cours d'initialisation."
+            return False, "Music.app is closed or initializing."
 
-        return False, f"Impossible de joindre Musique: {output}"
+        return False, f"Unable to reach Music.app: {output}"
 
     @staticmethod
     def open_automation_settings() -> None:
